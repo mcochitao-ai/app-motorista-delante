@@ -11,6 +11,10 @@ DB_PATH = BASE_DIR / "app.db"
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me")
+app.config["SESSION_COOKIE_SECURE"] = False  # True se usar HTTPS
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 horas em segundos
 
 
 def get_db():
@@ -88,13 +92,26 @@ def admin_required(view):
 
 @app.before_request
 def load_user():
+    # Limpa g.user primeiro
+    g.user = None
+    
     user_id = session.get("user_id")
     if not user_id:
-        g.user = None
         return
+    
     db = get_db()
     cur = db.execute("SELECT id, name, username, role FROM users WHERE id = ?", (user_id,))
-    g.user = cur.fetchone()
+@app.route("/")
+def index():
+    # Verifica se tem sessão válida E se o usuário existe
+    if session.get("user_id") and g.user:
+        return redirect(url_for("home"))
+    # Se não tem sessão válida, limpa tudo e vai pro login
+    session.clear()
+    return redirect(url_for("login"))
+    else:
+        # Se o usuário não existe mais, limpa a sessão
+        session.clear()
 
 
 @app.route("/")
