@@ -10,12 +10,12 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body class="{% block body_class %}{% endblock %}">
-  <header class="topbar {% if not g.user %}topbar-auth{% endif %}">
+  {% if g.user %}
+  <header class="topbar">
     <div class="brand">
       <span class="dot"></span>
-      <a href="{{ url_for('trip_form') if g.user else url_for('login') }}">Encerrar Viagem</a>
+      <a href="{{ url_for('trip_form') }}">Encerrar Viagem</a>
     </div>
-    {% if g.user %}
     <nav class="nav">
         <span class="pill">{{ g.user['name'] }} · {{ g.user['role'] }}</span>
         {% if session.get('role') == 'admin' %}
@@ -25,8 +25,8 @@
           <button type="submit" class="ghost">Sair</button>
         </form>
     </nav>
-    {% endif %}
   </header>
+  {% endif %}
 
   <main class="page {% block page_class %}{% endblock %}">
     {% with messages = get_flashed_messages(with_categories=true) %}
