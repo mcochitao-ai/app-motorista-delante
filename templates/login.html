@@ -3,6 +3,9 @@
 {% block page_class %}auth{% endblock %}
 {% block content %}
 <section class="hero auth-hero">
+  <div class="logo-wrap">
+    <img src="{{ url_for('static', filename='Logo-Delante-Branco-scaled.webp') }}" alt="Delante" class="brand-logo">
+  </div>
   <p class="eyebrow">Acesso</p>
   <h1>Entrar no app</h1>
   <p class="lede">Use seu usuário e senha. Admins podem criar novos usuários no painel.</p>

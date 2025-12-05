@@ -11,21 +11,21 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% if g.user %}
-  <header class="topbar">
-    <div class="brand">
-      <span class="dot"></span>
-      <a href="{{ url_for('trip_form') }}">Encerrar Viagem</a>
-    </div>
-    <nav class="nav">
-        <span class="pill">{{ g.user['name'] }} · {{ g.user['role'] }}</span>
-        {% if session.get('role') == 'admin' %}
-          <a class="link" href="{{ url_for('dashboard') }}">Painel</a>
-        {% endif %}
-        <form method="post" action="{{ url_for('logout') }}" class="inline">
-          <button type="submit" class="ghost">Sair</button>
-        </form>
-    </nav>
-  </header>
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <a href="{{ url_for('trip_form') }}">Encerrar Viagem</a>
+      </div>
+      <nav class="nav">
+          {% if session.get('role') == 'admin' %}
+            <a class="link" href="{{ url_for('dashboard') }}">Painel</a>
+          {% endif %}
+          <span class="pill">{{ g.user['name'] }} · {{ g.user['role'] }}</span>
+          <form method="post" action="{{ url_for('logout') }}" class="inline">
+            <button type="submit" class="ghost">Sair</button>
+          </form>
+      </nav>
+    </header>
   {% endif %}
 
   <main class="page {% block page_class %}{% endblock %}">
