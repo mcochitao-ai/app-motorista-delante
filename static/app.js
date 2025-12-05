@@ -38,10 +38,34 @@ function toggleReturnFields() {
   if (!statusSelect || !returnBlock) return;
   const isReturn = statusSelect.value === 'devolucao';
   returnBlock.classList.toggle('hidden', !isReturn);
-  const note = document.querySelector('#returnedNote');
-  const reason = document.querySelector('#returnReason');
-  if (note) note.required = isReturn;
-  if (reason) reason.required = isReturn;
+  if (!isReturn) {
+    const container = document.querySelector('#returnedNotesContainer');
+    if (container) container.innerHTML = '';
+  }
+}
+
+function generateReturnFields() {
+  const count = parseInt(document.querySelector('#returnCount')?.value || 1);
+  const container = document.querySelector('#returnedNotesContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const item = document.createElement('div');
+    item.className = 'return-note-item';
+    item.innerHTML = `
+      <h4>Nota devolvida ${i}</h4>
+      <div class="field">
+        <label for="returnedNote${i}">Número da nota</label>
+        <input type="text" id="returnedNote${i}" name="returnedNote${i}" placeholder="Ex: NF-12345" required />
+      </div>
+      <div class="field">
+        <label for="returnReason${i}">Motivo da devolução</label>
+        <textarea id="returnReason${i}" name="returnReason${i}" rows="3" placeholder="Descreva o motivo" required></textarea>
+      </div>
+    `;
+    container.appendChild(item);
+  }
 }
 
 function togglePixFields() {
@@ -74,6 +98,11 @@ if (form) {
 statusSelect?.addEventListener('change', toggleReturnFields);
 pixOptions.forEach((opt) => opt.addEventListener('change', togglePixFields));
 driverNameInput?.addEventListener('blur', persistDriverName);
+
+const generateBtn = document.querySelector('#generateReturnFields');
+if (generateBtn) {
+  generateBtn.addEventListener('click', generateReturnFields);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   setToday();
