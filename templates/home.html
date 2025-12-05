@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Início · App Motorista{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Bem-vindo</p>
+  <h1>{{ g.user['name'] }}</h1>
+  <p class="lede">Gerencie suas viagens e encerramentos.</p>
+</section>
+
+<div class="grid two">
+  <section class="card stats-card">
+    <h2>📊 Resumo de Viagens</h2>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total de viagens</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.finalizadas }}</div>
+        <div class="stat-label">Finalizadas 100%</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.devolucoes }}</div>
+        <div class="stat-label">Com devolução</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">{{ stats.hoje }}</div>
+        <div class="stat-label">Hoje</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card action-card">
+    <h2>🚛 Ação rápida</h2>
+    <p class="muted">Finalize sua viagem atual preenchendo os dados de entrega.</p>
+    <div class="actions">
+      <a href="{{ url_for('trip_form') }}" class="primary btn-block">Encerrar Viagem</a>
+    </div>
+  </section>
+</div>
+
+<section class="card">
+  <h2>📋 Últimas viagens</h2>
+  {% if recent_trips %}
+  <div class="trips-list">
+    {% for trip in recent_trips %}
+    <div class="trip-item">
+      <div class="trip-header">
+        <span class="trip-date">{{ trip.date }}</span>
+        <span class="trip-status {{ 'status-ok' if trip.status == 'finalizado' else 'status-return' }}">
+          {{ 'Finalizada 100%' if trip.status == 'finalizado' else 'Com devolução' }}
+        </span>
+      </div>
+      <div class="trip-details">
+        <span>Motorista: {{ trip.driver }}</span>
+        {% if trip.helper %}
+        <span>Ajudante: {{ trip.helper }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nenhuma viagem registrada ainda. Comece encerrando sua primeira viagem!</p>
+  {% endif %}
+</section>
+{% endblock %}

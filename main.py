@@ -100,8 +100,27 @@ def load_user():
 @app.route("/")
 def index():
     if session.get("user_id"):
-        return redirect(url_for("trip_form"))
+        return redirect(url_for("home"))
     return redirect(url_for("login"))
+
+
+@app.route("/home")
+@login_required
+def home():
+    # Mock data - substituir por consulta real ao banco quando implementar salvamento
+    stats = {
+        "total": 0,
+        "finalizadas": 0,
+        "devolucoes": 0,
+        "hoje": 0
+    }
+    recent_trips = []
+    # Exemplo de estrutura esperada quando tiver dados reais:
+    # recent_trips = [
+    #     {"date": "05/12/2025", "status": "finalizado", "driver": "João Silva", "helper": "Pedro"},
+    #     {"date": "04/12/2025", "status": "devolucao", "driver": "João Silva", "helper": None}
+    # ]
+    return render_template("home.html", stats=stats, recent_trips=recent_trips)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -121,7 +140,7 @@ def login():
             session["role"] = user["role"]
             session.permanent = True
             flash("Login feito com sucesso.", "success")
-            return redirect(url_for("trip_form"))
+            return redirect(url_for("home"))
         flash("Usuário ou senha inválidos.", "error")
     return render_template("login.html")
 

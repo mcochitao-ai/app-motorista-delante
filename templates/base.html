@@ -14,11 +14,12 @@
     <header class="topbar">
       <div class="brand">
         <span class="dot"></span>
-        <a href="{{ url_for('trip_form') }}">Encerrar Viagem</a>
+        <a href="{{ url_for('home') }}">App Motorista</a>
       </div>
       <nav class="nav">
+          <a class="link" href="{{ url_for('trip_form') }}">Encerrar Viagem</a>
           {% if session.get('role') == 'admin' %}
-            <a class="link" href="{{ url_for('dashboard') }}">Painel</a>
+            <a class="link" href="{{ url_for('dashboard') }}">Painel Admin</a>
           {% endif %}
           <span class="pill">{{ g.user['name'] }} · {{ g.user['role'] }}</span>
           <form method="post" action="{{ url_for('logout') }}" class="inline">
