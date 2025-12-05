@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Painel · App Motorista{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Painel</p>
+  <h1>Gerenciar usuários</h1>
+  <p class="lede">Crie novos logins para motoristas e ajudantes. Apenas admins têm acesso.</p>
+</section>
+
+<div class="grid two">
+  <section class="card">
+    <h2>Usuários existentes</h2>
+    <div class="table">
+      <div class="row head">
+        <div>ID</div><div>Nome</div><div>Usuário</div><div>Papel</div>
+      </div>
+      {% for u in users %}
+      <div class="row">
+        <div>{{ u['id'] }}</div>
+        <div>{{ u['name'] }}</div>
+        <div>{{ u['username'] }}</div>
+        <div class="pill pill-alt">{{ u['role'] }}</div>
+      </div>
+      {% endfor %}
+      {% if not users %}
+      <p class="muted">Nenhum usuário cadastrado além do admin.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Novo usuário</h2>
+    <form method="post" class="form">
+      <div class="field">
+        <label for="name">Nome</label>
+        <input id="name" name="name" required>
+      </div>
+      <div class="field">
+        <label for="username">Usuário</label>
+        <input id="username" name="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" required>
+      </div>
+      <div class="field">
+        <label for="role">Papel</label>
+        <select id="role" name="role">
+          <option value="user">Motorista/Ajudante</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button type="submit" class="primary">Criar usuário</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

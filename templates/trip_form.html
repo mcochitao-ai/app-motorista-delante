@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Finalizar viagem{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Encerrar viagem</p>
+  <h1>Resumo final para motoristas</h1>
+  <p class="lede">Preencha os detalhes. O formulário se adapta às escolhas para ser rápido no celular.</p>
+</section>
+
+<section class="card">
+  <form id="tripForm" class="form" method="post" enctype="multipart/form-data">
+    <div class="field two-col">
+      <label for="tripDate">Data da finalização</label>
+      <input type="date" id="tripDate" name="tripDate" required />
+    </div>
+
+    <div class="field">
+      <label for="driverName">Nome do motorista</label>
+      <input type="text" id="driverName" name="driverName" autocomplete="name" placeholder="Ex: João Silva" value="{{ user['name'] if user else '' }}" data-default="{{ user['name'] if user else '' }}" required />
+      <p class="hint">Preenche sozinho se você já estiver logado neste dispositivo.</p>
+    </div>
+
+    <div class="field">
+      <label for="helperName">Nome do ajudante</label>
+      <input type="text" id="helperName" name="helperName" placeholder="Ex: Pedro Souza" />
+    </div>
+
+    <div class="field">
+      <label for="status">Status da entrega</label>
+      <select id="status" name="status" required>
+        <option value="finalizado">Finalizado 100%</option>
+        <option value="devolucao">Houve devolução</option>
+      </select>
+    </div>
+
+    <div id="returnBlock" class="nested hidden">
+      <div class="field">
+        <label for="returnedNote">Nota que voltou</label>
+        <input type="text" id="returnedNote" name="returnedNote" placeholder="Número da nota" />
+      </div>
+      <div class="field">
+        <label for="returnReason">Motivo da devolução</label>
+        <textarea id="returnReason" name="returnReason" rows="3" placeholder="Descreva o motivo"></textarea>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Teve entrega via PIX?</label>
+      <div class="options">
+        <label class="option"><input type="radio" name="pix" value="nao" checked />Não</label>
+        <label class="option"><input type="radio" name="pix" value="sim" />Sim</label>
+      </div>
+    </div>
+
+    <div id="pixBlock" class="nested hidden">
+      <div class="field">
+        <label for="pixProof">Comprovante PIX (foto ou anexo)</label>
+        <input type="file" id="pixProof" name="pixProof" accept="image/*,.pdf" capture="environment" />
+        <p class="hint">Abra a câmera ou selecione um arquivo da galeria.</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="canhoteira">Fotos da canhoteira</label>
+      <input type="file" id="canhoteira" name="canhoteira" accept="image/*" capture="environment" multiple />
+      <p class="hint">Você pode tirar na hora ou anexar várias fotos.</p>
+    </div>
+
+    <div class="field">
+      <label for="notes">Observações adicionais</label>
+      <textarea id="notes" name="notes" rows="3" placeholder="Algo mais a registrar?"></textarea>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Finalizar viagem</button>
+    </div>
+
+    <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

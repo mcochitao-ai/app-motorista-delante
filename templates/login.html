@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Login · App Motorista{% endblock %}
+{% block content %}
+<section class="hero">
+  <p class="eyebrow">Acesso</p>
+  <h1>Entrar no app</h1>
+  <p class="lede">Use seu usuário e senha. Admins podem criar novos usuários no painel.</p>
+</section>
+
+<section class="card narrow">
+  <form method="post" class="form">
+    <div class="field">
+      <label for="username">Usuário</label>
+      <input id="username" name="username" type="text" autocomplete="username" required>
+    </div>
+    <div class="field">
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">Entrar</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
