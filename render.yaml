@@ -3,6 +3,8 @@ services:
     name: app-motorista
     env: python
     plan: free
+    branch: main
+    autoDeploy: true
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn main:app"
     envVars:
