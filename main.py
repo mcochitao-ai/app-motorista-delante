@@ -101,14 +101,11 @@ def load_user():
     
     db = get_db()
     cur = db.execute("SELECT id, name, username, role FROM users WHERE id = ?", (user_id,))
-@app.route("/")
-def index():
-    # Verifica se tem sessão válida E se o usuário existe
-    if session.get("user_id") and g.user:
-        return redirect(url_for("home"))
-    # Se não tem sessão válida, limpa tudo e vai pro login
-    session.clear()
-    return redirect(url_for("login"))
+    user = cur.fetchone()
+    
+    # Valida se o user_id da sessão ainda existe no banco
+    if user:
+        g.user = user
     else:
         # Se o usuário não existe mais, limpa a sessão
         session.clear()
@@ -116,8 +113,11 @@ def index():
 
 @app.route("/")
 def index():
-    if session.get("user_id"):
+    # Verifica se tem sessão válida E se o usuário existe
+    if session.get("user_id") and g.user:
         return redirect(url_for("home"))
+    # Se não tem sessão válida, limpa tudo e vai pro login
+    session.clear()
     return redirect(url_for("login"))
 
 
