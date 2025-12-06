@@ -9,10 +9,15 @@
 <section class="hero auth-hero">
   <p class="eyebrow">Acesso</p>
   <h1>Entrar no app</h1>
-  <p class="lede">Use seu usuário e senha. Admins podem criar novos usuários no painel.</p>
+  <p class="lede">Use seu Google account ou usuário e senha.</p>
 </section>
 
 <section class="card narrow">
+  <!-- Google Sign-In Button -->
+  <div id="google_signin" class="g_id_signin" data-type="standard" data-size="large" data-theme="dark" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="100%"></div>
+
+  <div class="form-divider">ou</div>
+
   <form method="post" class="form">
     <div class="field">
       <label for="username">Usuário</label>
@@ -26,7 +31,45 @@
       <button type="submit" class="primary">Entrar</button>
     </div>
   </form>
-  <div class="form-divider">ou</div>
   <a href="{{ url_for('signup') }}" class="secondary full-width" style="text-align: center;">Criar Nova Conta</a>
 </section>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  window.onload = function() {
+    google.accounts.id.initialize({
+      client_id: "{{ GOOGLE_CLIENT_ID }}",
+      callback: handleCredentialResponse
+    });
+  };
+
+  function handleCredentialResponse(response) {
+    // The response contains JWT in response.credential
+    console.log("Google Sign-In response received");
+    
+    // Send the token to the backend
+    fetch("{{ url_for('google_callback') }}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        credential: response.credential
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        console.error("Error:", data.error);
+        alert("Erro ao fazer login: " + data.error);
+      } else if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    })
+    .catch(error => {
+      console.error("Fetch error:", error);
+      alert("Erro ao conectar com Google");
+    });
+  }
+</script>
 {% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Completar Perfil · App Motorista{% endblock %}
+{% block page_class %}auth{% endblock %}
+{% block content %}
+<div class="logo-wrap">
+  <img src="{{ url_for('static', filename='Logo-Delante-Branco-scaled.webp') }}" alt="Delante" class="brand-logo">
+</div>
+
+<section class="hero auth-hero">
+  <p class="eyebrow">Bem-vindo</p>
+  <h1>Completar Perfil</h1>
+  <p class="lede">Preencha seus dados para finalizar o registro.</p>
+</section>
+
+<section class="card narrow">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" class="form">
+    <div class="field">
+      <label for="cnh">CNH (Carteira de Motorista)</label>
+      <input id="cnh" name="cnh" type="text" required placeholder="Seu número de CNH">
+    </div>
+
+    <div class="field">
+      <label for="phone">Telefone</label>
+      <input id="phone" name="phone" type="tel" required placeholder="(11) 99999-9999">
+    </div>
+
+    <div class="field">
+      <label for="password">Defina uma Senha</label>
+      <input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <div class="field">
+      <label for="password_confirm">Confirme a Senha</label>
+      <input id="password_confirm" name="password_confirm" type="password" required placeholder="Repita a senha">
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Completar Perfil</button>
+    </div>
+  </form>
+</section>
+
+<style>
+  .alert {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    border: 1px solid;
+  }
+  
+  .alert-success {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+  }
+  
+  .alert-error {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: rgba(255, 107, 53, 0.3);
+    color: #ff6b35;
+  }
+</style>
+{% endblock %}

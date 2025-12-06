@@ -2,9 +2,13 @@ import os
 import sqlite3
 from functools import wraps
 from pathlib import Path
+import json
+import urllib.parse
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g, abort
 from werkzeug.security import generate_password_hash, check_password_hash
+from google.auth.transport import requests
+from google.oauth2 import id_token
 
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "app.db"
@@ -163,7 +167,7 @@ def login():
             flash("Login feito com sucesso.", "success")
             return redirect(url_for("home"))
         flash("Usuário ou senha inválidos.", "error")
-    return render_template("login.html")
+    return render_template("login.html", GOOGLE_CLIENT_ID=os.environ.get("GOOGLE_CLIENT_ID", ""))
 
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -191,6 +195,141 @@ def signup():
         except sqlite3.IntegrityError:
             flash("Email já cadastrado.", "error")
     return render_template("signup.html")
+
+
+@app.route("/auth/google/callback", methods=["POST"])
+def google_callback():
+    """
+    Google OAuth callback. Receives a token from the frontend after user authenticates.
+    Verifies the token and creates/logs in the user.
+    """
+    try:
+        token = request.json.get("credential")
+        if not token:
+            return {"error": "No token provided"}, 400
+
+        # Verify the token
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                os.environ.get("GOOGLE_CLIENT_ID", "")
+            )
+        except Exception as e:
+            return {"error": f"Token verification failed: {str(e)}"}, 401
+
+        # Extract user info from token
+        email = idinfo.get("email")
+        name = idinfo.get("name", "")
+        picture = idinfo.get("picture", "")
+
+        if not email:
+            return {"error": "Email not found in token"}, 400
+
+        db = get_db()
+
+        # Check if user already exists
+        cur = db.execute("SELECT id, name, cnh, phone, role FROM users WHERE email = ?", (email,))
+        user = cur.fetchone()
+
+        if user:
+            # User exists, log them in
+            if not user["cnh"] or not user["phone"]:
+                # User hasn't completed profile yet
+                session["user_id"] = user["id"]
+                session["email"] = email
+                session.permanent = True
+                return {"redirect": url_for("profile_create")}, 200
+            else:
+                # User profile is complete, log them in
+                session["user_id"] = user["id"]
+                session["username"] = email.split("@")[0]
+                session["role"] = user["role"]
+                session.permanent = True
+                return {"redirect": url_for("home")}, 200
+        else:
+            # New user, create account with email
+            # Generate a username from email
+            username = email.split("@")[0]
+            # Check if username exists
+            counter = 1
+            original_username = username
+            while True:
+                cur = db.execute("SELECT id FROM users WHERE username = ?", (username,))
+                if not cur.fetchone():
+                    break
+                username = f"{original_username}{counter}"
+                counter += 1
+
+            # Create new user (but they need to complete profile first)
+            db.execute(
+                "INSERT INTO users (email, name, username, password_hash, role) VALUES (?, ?, ?, ?, ?)",
+                (email, name, username, generate_password_hash("oauth"), "user"),
+            )
+            db.commit()
+
+            # Get the new user
+            cur = db.execute("SELECT id FROM users WHERE email = ?", (email,))
+            new_user = cur.fetchone()
+
+            # Set session but redirect to profile creation
+            session["user_id"] = new_user["id"]
+            session["email"] = email
+            session.permanent = True
+
+            return {"redirect": url_for("profile_create")}, 200
+
+    except Exception as e:
+        return {"error": f"Internal error: {str(e)}"}, 500
+
+
+@app.route("/profile/create", methods=["GET", "POST"])
+@login_required
+def profile_create():
+    """
+    Profile creation form for new OAuth users.
+    Collects: nome completo, CNH, telefone, and sets password.
+    """
+    db = get_db()
+    user_id = session.get("user_id")
+    
+    # Check if user already has a complete profile
+    cur = db.execute("SELECT cnh, phone FROM users WHERE id = ?", (user_id,))
+    user = cur.fetchone()
+    
+    if user and user["cnh"] and user["phone"]:
+        # Profile already complete, redirect to home
+        return redirect(url_for("home"))
+    
+    if request.method == "POST":
+        cnh = request.form.get("cnh", "").strip()
+        phone = request.form.get("phone", "").strip()
+        password = request.form.get("password", "")
+        password_confirm = request.form.get("password_confirm", "")
+
+        if not all([cnh, phone, password, password_confirm]):
+            flash("Preencha todos os campos.", "error")
+            return redirect(url_for("profile_create"))
+
+        if password != password_confirm:
+            flash("As senhas não conferem.", "error")
+            return redirect(url_for("profile_create"))
+
+        if len(password) < 6:
+            flash("A senha deve ter pelo menos 6 caracteres.", "error")
+            return redirect(url_for("profile_create"))
+
+        # Update user profile
+        db.execute(
+            "UPDATE users SET cnh = ?, phone = ?, password_hash = ? WHERE id = ?",
+            (cnh, phone, generate_password_hash(password), user_id),
+        )
+        db.commit()
+
+        flash("Perfil criado com sucesso!", "success")
+        return redirect(url_for("home"))
+
+    return render_template("profile_create.html", user=g.user)
 
 
 @app.route("/logout", methods=["POST"])
