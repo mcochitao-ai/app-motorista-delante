@@ -146,6 +146,9 @@ textarea { resize: vertical; }
 .status-return { background: rgba(255, 107, 53, 0.14); color: var(--accent-secondary); }
 .trip-details { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
 
+.form-divider { text-align: center; margin: 16px 0; color: var(--muted); font-size: 14px; }
+.full-width { width: 100%; }
+
 @media (max-width: 640px) {
   .card { padding: 22px; }
   .page { padding: 24px 16px 48px; }

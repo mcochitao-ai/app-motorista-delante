@@ -39,9 +39,13 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            username TEXT NOT NULL UNIQUE,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user'
+            username TEXT UNIQUE,
+            password_hash TEXT,
+            email TEXT UNIQUE,
+            cnh TEXT,
+            phone TEXT,
+            role TEXT NOT NULL DEFAULT 'user',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
     )
@@ -160,6 +164,33 @@ def login():
             return redirect(url_for("home"))
         flash("Usuário ou senha inválidos.", "error")
     return render_template("login.html")
+
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        name = request.form.get("name", "").strip()
+        password = request.form.get("password", "")
+        cnh = request.form.get("cnh", "").strip()
+        phone = request.form.get("phone", "").strip()
+
+        if not all([email, name, password, cnh, phone]):
+            flash("Preencha todos os campos.", "error")
+            return redirect(url_for("signup"))
+
+        db = get_db()
+        try:
+            db.execute(
+                "INSERT INTO users (email, name, password_hash, cnh, phone, role) VALUES (?, ?, ?, ?, ?, ?)",
+                (email, name, generate_password_hash(password), cnh, phone, "user"),
+            )
+            db.commit()
+            flash("Conta criada! Faça login.", "success")
+            return redirect(url_for("login"))
+        except sqlite3.IntegrityError:
+            flash("Email já cadastrado.", "error")
+    return render_template("signup.html")
 
 
 @app.route("/logout", methods=["POST"])

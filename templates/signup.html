@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Criar Conta · App Motorista{% endblock %}
+{% block page_class %}auth{% endblock %}
+{% block content %}
+<div class="logo-wrap">
+  <img src="{{ url_for('static', filename='Logo-Delante-Branco-scaled.webp') }}" alt="Delante" class="brand-logo">
+</div>
+
+<section class="hero auth-hero">
+  <p class="eyebrow">Novo Usuário</p>
+  <h1>Criar Conta</h1>
+  <p class="lede">Preencha os dados abaixo para se registrar como motorista.</p>
+</section>
+
+<section class="card narrow">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" class="form">
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required placeholder="seu@email.com">
+    </div>
+
+    <div class="field">
+      <label for="name">Nome Completo</label>
+      <input id="name" name="name" type="text" required placeholder="João Silva">
+    </div>
+
+    <div class="field">
+      <label for="cnh">CNH (Carteira de Motorista)</label>
+      <input id="cnh" name="cnh" type="text" required placeholder="Seu número de CNH">
+    </div>
+
+    <div class="field">
+      <label for="phone">Telefone</label>
+      <input id="phone" name="phone" type="tel" required placeholder="(11) 99999-9999">
+    </div>
+
+    <div class="field">
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password" required placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Criar Conta</button>
+    </div>
+  </form>
+</section>
+
+<section class="card narrow" style="margin-top: 16px; text-align: center;">
+  <p style="color: var(--muted); margin: 0; font-size: 14px;">
+    Já tem uma conta? <a href="{{ url_for('login') }}" style="color: var(--accent); text-decoration: none; font-weight: 600;">Faça login</a>
+  </p>
+</section>
+
+<style>
+  .alert {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    border: 1px solid;
+  }
+  
+  .alert-success {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #00d4ff;
+  }
+  
+  .alert-error {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: rgba(255, 107, 53, 0.3);
+    color: #ff6b35;
+  }
+</style>
+{% endblock %}
