@@ -14,7 +14,9 @@
 
 <section class="card narrow">
   <!-- Google Sign-In Button -->
-  <div id="google_signin" class="g_id_signin" data-type="standard" data-size="large" data-theme="dark" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="100%"></div>
+  <div id="google_signin_container">
+    <div class="g_id_signin" data-type="standard" data-size="large" data-theme="dark" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left" data-width="100%"></div>
+  </div>
 
   <div class="form-divider">ou</div>
 
@@ -31,16 +33,41 @@
       <button type="submit" class="primary">Entrar</button>
     </div>
   </form>
-  <a href="{{ url_for('signup') }}" class="secondary full-width" style="text-align: center;">Criar Nova Conta</a>
+  <a href="{{ url_for('signup') }}" class="secondary full-width" style="text-align: center; display: block; margin-top: 12px;">Criar Nova Conta</a>
 </section>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
   window.onload = function() {
-    google.accounts.id.initialize({
-      client_id: "{{ GOOGLE_CLIENT_ID }}",
-      callback: handleCredentialResponse
-    });
+    const clientId = "{{ GOOGLE_CLIENT_ID }}";
+    
+    // Only initialize if client ID is set
+    if (clientId && clientId !== "") {
+      try {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse
+        });
+        google.accounts.id.renderButton(
+          document.getElementById('google_signin_container'),
+          { 
+            type: 'standard', 
+            size: 'large', 
+            theme: 'dark',
+            text: 'signin_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: '100%'
+          }
+        );
+      } catch (e) {
+        console.error("Error initializing Google Sign-In:", e);
+      }
+    } else {
+      console.warn("GOOGLE_CLIENT_ID not configured");
+      // Hide the Google Sign-In container if not configured
+      document.getElementById('google_signin_container').style.display = 'none';
+    }
   };
 
   function handleCredentialResponse(response) {
@@ -72,4 +99,16 @@
     });
   }
 </script>
+
+<style>
+  #google_signin_container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  
+  #google_signin_container > div {
+    width: 100%;
+  }
+</style>
 {% endblock %}
