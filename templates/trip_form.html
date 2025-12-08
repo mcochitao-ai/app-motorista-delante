@@ -3,70 +3,98 @@
 {% block content %}
 <section class="hero">
   <p class="eyebrow">Encerrar viagem</p>
-  <h1>Resumo final para motoristas</h1>
-  <p class="lede">Preencha os detalhes. O formulário se adapta às escolhas para ser rápido no celular.</p>
+  <h1>Resumo final em etapas rápidas</h1>
+  <p class="lede">3 passos simples: dados, devoluções e comprovantes. Tudo otimizado para celular.</p>
 </section>
 
-<section class="card">
+<section class="card wizard">
+  <div class="wizard-steps" aria-label="Progresso do formulário">
+    <div class="wizard-step active" data-step="1">Dados</div>
+    <div class="wizard-step" data-step="2">Devoluções</div>
+    <div class="wizard-step" data-step="3">Comprovantes</div>
+  </div>
+  <div class="wizard-progress"><div class="wizard-progress-bar" id="wizardProgress"></div></div>
+
   <form id="tripForm" class="form" method="post" enctype="multipart/form-data">
-    <div class="field two-col">
-      <label for="tripDate">Data da finalização</label>
-      <input type="date" id="tripDate" name="tripDate" required />
+    <div class="wizard-pane" data-step-pane="1">
+      <div class="field two-col">
+        <label for="tripDate">Data da finalização</label>
+        <input type="date" id="tripDate" name="tripDate" required />
+      </div>
+
+      <div class="field">
+        <label for="driverName">Nome do motorista</label>
+        <input type="text" id="driverName" name="driverName" autocomplete="name" placeholder="Ex: João Silva" value="{{ user['name'] if user else '' }}" data-default="{{ user['name'] if user else '' }}" required />
+        <p class="hint">Pré-preenchido quando você já usou este dispositivo.</p>
+      </div>
+
+      <div class="field">
+        <label for="helperName">Nome do ajudante</label>
+        <input type="text" id="helperName" name="helperName" placeholder="Ex: Pedro Souza" />
+      </div>
+
+      <div class="field">
+        <label for="status">Status da entrega</label>
+        <select id="status" name="status" required>
+          <option value="finalizado">Finalizado 100%</option>
+          <option value="devolucao">Houve devolução</option>
+        </select>
+      </div>
     </div>
 
-    <div class="field">
-      <label for="driverName">Nome do motorista</label>
-      <input type="text" id="driverName" name="driverName" autocomplete="name" placeholder="Ex: João Silva" value="{{ user['name'] if user else '' }}" data-default="{{ user['name'] if user else '' }}" required />
-      <p class="hint">Preenche sozinho se você já estiver logado neste dispositivo.</p>
-    </div>
-
-    <div class="field">
-      <label for="helperName">Nome do ajudante</label>
-      <input type="text" id="helperName" name="helperName" placeholder="Ex: Pedro Souza" />
-    </div>
-
-    <div class="field">
-      <label for="status">Status da entrega</label>
-      <select id="status" name="status" required>
-        <option value="finalizado">Finalizado 100%</option>
-        <option value="devolucao">Houve devolução</option>
-      </select>
-    </div>
-
+    <div class="wizard-pane" data-step-pane="2">
+      <div class="field">
+        <p class="hint" style="margin:0">Preencha somente se houve devolução.</p>
         <div id="returnBlock" class="nested hidden">
           <div class="field">
             <label for="returnCount">Quantas notas voltaram?</label>
             <input type="number" id="returnCount" name="returnCount" min="1" max="20" value="1" />
           </div>
-          <div id="returnedNotesContainer"></div>
-          <button type="button" id="generateReturnFields" class="secondary">Gerar campos para notas</button>
-        </div>    <div class="field">
-      <label>Teve entrega via PIX?</label>
-      <div class="options">
-        <label class="option"><input type="radio" name="pix" value="nao" checked />Não</label>
-        <label class="option"><input type="radio" name="pix" value="sim" />Sim</label>
+          <div class="wizard-inline">
+            <button type="button" id="generateReturnFields" class="secondary">Gerar campos</button>
+            <span class="hint">Gere os campos e preencha cada nota.</span>
+          </div>
+          <div id="returnedNotesContainer" class="return-cards"></div>
+        </div>
+        <div id="noReturnInfo" class="muted">Se não houve devolução, clique “Próximo”.</div>
       </div>
     </div>
 
-        <div id="pixBlock" class="nested hidden">
-          <div class="field">
-            <label for="pixProof">Comprovante PIX (foto ou anexo)</label>
-            <input type="file" id="pixProof" name="pixProof" accept="image/*,.pdf" />
-            <p class="hint">Escolha tirar foto ou anexar arquivo da galeria.</p>
-          </div>
+    <div class="wizard-pane" data-step-pane="3">
+      <div class="field">
+        <label>Teve entrega via PIX?</label>
+        <div class="options">
+          <label class="option"><input type="radio" name="pix" value="nao" checked />Não</label>
+          <label class="option"><input type="radio" name="pix" value="sim" />Sim</label>
         </div>
+      </div>
 
+      <div id="pixBlock" class="nested hidden">
         <div class="field">
-          <label for="canhoteira">Fotos da canhoteira</label>
-          <input type="file" id="canhoteira" name="canhoteira" accept="image/*" multiple />
-          <p class="hint">Escolha tirar foto ou anexar várias fotos da galeria.</p>
-        </div>    <div class="field">
-      <label for="notes">Observações adicionais</label>
-      <textarea id="notes" name="notes" rows="3" placeholder="Algo mais a registrar?"></textarea>
+          <label for="pixProof">Comprovante PIX (foto ou PDF)</label>
+          <input type="file" id="pixProof" name="pixProof" accept="image/*,.pdf" />
+          <p class="hint">Tire foto ou anexe da galeria.</p>
+          <div id="pixPreview" class="upload-preview"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="canhoteira">Fotos da canhoteira</label>
+        <input type="file" id="canhoteira" name="canhoteira" accept="image/*" multiple />
+        <p class="hint">Anexe várias fotos. Pré-visualização aparece abaixo.</p>
+        <div id="canhoteiraPreview" class="upload-preview grid-preview"></div>
+      </div>
+
+      <div class="field">
+        <label for="notes">Observações adicionais</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="Algo mais a registrar?"></textarea>
+      </div>
     </div>
 
-    <div class="actions">
-      <button type="submit" class="primary">Finalizar viagem</button>
+    <div class="wizard-actions">
+      <button type="button" class="ghost" id="prevStep">Voltar</button>
+      <button type="button" class="secondary" id="nextStep">Próximo</button>
+      <button type="submit" class="primary" id="submitForm">Finalizar viagem</button>
     </div>
 
     <p id="feedback" class="feedback" role="status" aria-live="polite"></p>

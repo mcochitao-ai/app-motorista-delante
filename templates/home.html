@@ -1,43 +1,52 @@
 {% extends 'base.html' %}
 {% block title %}Início · App Motorista{% endblock %}
 {% block content %}
-<section class="hero">
-  <p class="eyebrow">Bem-vindo</p>
-  <h1>{{ g.user['name'] }}</h1>
-  <p class="lede">Gerencie suas viagens e encerramentos.</p>
+<section class="hero hero-home">
+  <div>
+    <p class="eyebrow">Bem-vindo</p>
+    <h1>{{ g.user['name'] }}</h1>
+    <p class="lede">Um clique para encerrar a viagem. Resumo rápido e status sempre à mão.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('trip_form') }}" class="primary">Encerrar Viagem</a>
+      <span class="muted">Mantenha sua jornada em dia.</span>
+    </div>
+  </div>
+  <div class="hero-card">
+    <p class="muted" style="margin:0">Status de hoje</p>
+    <div class="hero-metrics">
+      <div>
+        <div class="stat-value">{{ stats.hoje }}</div>
+        <div class="stat-label">Encerradas</div>
+      </div>
+      <div>
+        <div class="stat-value">{{ stats.devolucoes }}</div>
+        <div class="stat-label">Devoluções</div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<div class="grid two">
-  <section class="card stats-card">
-    <h2>📊 Resumo de Viagens</h2>
-    <div class="stats-grid">
-      <div class="stat-item">
-        <div class="stat-value">{{ stats.total }}</div>
-        <div class="stat-label">Total de viagens</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">{{ stats.finalizadas }}</div>
-        <div class="stat-label">Finalizadas 100%</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">{{ stats.devolucoes }}</div>
-        <div class="stat-label">Com devolução</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value">{{ stats.hoje }}</div>
-        <div class="stat-label">Hoje</div>
-      </div>
+<section class="card stats-card">
+  <h2>📊 Resumo de Viagens</h2>
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-value">{{ stats.total }}</div>
+      <div class="stat-label">Total de viagens</div>
     </div>
-  </section>
-
-  <section class="card action-card">
-    <h2>🚛 Ação rápida</h2>
-    <p class="muted">Finalize sua viagem atual preenchendo os dados de entrega.</p>
-    <div class="actions">
-      <a href="{{ url_for('trip_form') }}" class="primary btn-block">Encerrar Viagem</a>
+    <div class="stat-item">
+      <div class="stat-value">{{ stats.finalizadas }}</div>
+      <div class="stat-label">Finalizadas 100%</div>
     </div>
-  </section>
-</div>
+    <div class="stat-item">
+      <div class="stat-value">{{ stats.devolucoes }}</div>
+      <div class="stat-label">Com devolução</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">{{ stats.hoje }}</div>
+      <div class="stat-label">Hoje</div>
+    </div>
+  </div>
+</section>
 
 <section class="card">
   <h2>📋 Últimas viagens</h2>

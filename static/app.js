@@ -7,6 +7,15 @@ const form = document.querySelector('#tripForm');
 const feedback = document.querySelector('#feedback');
 const driverNameInput = document.querySelector('#driverName');
 
+// Wizard controls
+const panes = document.querySelectorAll('[data-step-pane]');
+const steps = document.querySelectorAll('.wizard-step');
+const progressBar = document.querySelector('#wizardProgress');
+const nextBtn = document.querySelector('#nextStep');
+const prevBtn = document.querySelector('#prevStep');
+const submitBtn = document.querySelector('#submitForm');
+let currentStep = 1;
+
 function setToday() {
   if (!tripDate) return;
   const today = new Date();
@@ -41,6 +50,11 @@ function toggleReturnFields() {
   if (!isReturn) {
     const container = document.querySelector('#returnedNotesContainer');
     if (container) container.innerHTML = '';
+  } else {
+    const container = document.querySelector('#returnedNotesContainer');
+    if (container && container.childElementCount === 0) {
+      generateReturnFields();
+    }
   }
 }
 
@@ -83,8 +97,85 @@ function showFeedback(message, ok = true) {
   feedback.style.color = ok ? 'var(--accent)' : '#f87171';
 }
 
+function setStep(step) {
+  currentStep = Math.min(Math.max(step, 1), panes.length);
+
+  panes.forEach((pane, idx) => {
+    const paneStep = idx + 1;
+    pane.classList.toggle('active', paneStep === currentStep);
+  });
+
+  steps.forEach((stepEl, idx) => {
+    const stepIndex = idx + 1;
+    stepEl.classList.toggle('active', stepIndex === currentStep);
+    stepEl.classList.toggle('done', stepIndex < currentStep);
+  });
+
+  if (progressBar) {
+    const pct = ((currentStep - 1) / (panes.length - 1)) * 100;
+    progressBar.style.width = `${pct}%`;
+  }
+
+  if (prevBtn) prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+  if (nextBtn) nextBtn.style.display = currentStep === panes.length ? 'none' : 'inline-flex';
+  if (submitBtn) submitBtn.style.display = currentStep === panes.length ? 'inline-flex' : 'none';
+}
+
+function validateStep(step) {
+  const pane = document.querySelector(`[data-step-pane="${step}"]`);
+  if (!pane) return true;
+  const fields = pane.querySelectorAll('input, select, textarea');
+  for (const field of fields) {
+    // ignore hidden blocks
+    if (field.closest('.hidden')) continue;
+    if (!field.checkValidity()) {
+      field.reportValidity();
+      return false;
+    }
+  }
+  return true;
+}
+
+function handleNext() {
+  if (!validateStep(currentStep)) return;
+  setStep(currentStep + 1);
+  showFeedback('');
+}
+
+function handlePrev() {
+  setStep(currentStep - 1);
+  showFeedback('');
+}
+
+function previewFiles(inputEl, previewEl, opts = { grid: false }) {
+  if (!inputEl || !previewEl) return;
+  previewEl.innerHTML = '';
+  const files = Array.from(inputEl.files || []);
+  files.forEach((file) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.alt = file.name;
+      item.appendChild(img);
+    } else {
+      item.textContent = file.name;
+    }
+
+    previewEl.appendChild(item);
+  });
+}
+
 if (form) {
   form.addEventListener('submit', (event) => {
+    // Só permite enviar se último passo estiver válido
+    if (!validateStep(currentStep) || currentStep !== panes.length) {
+      event.preventDefault();
+      showFeedback('Finalize o passo atual antes de enviar.', false);
+      return;
+    }
     persistDriverName();
     if (!form.checkValidity()) {
       event.preventDefault();
@@ -104,9 +195,21 @@ if (generateBtn) {
   generateBtn.addEventListener('click', generateReturnFields);
 }
 
+const pixProofInput = document.querySelector('#pixProof');
+const pixPreview = document.querySelector('#pixPreview');
+pixProofInput?.addEventListener('change', () => previewFiles(pixProofInput, pixPreview));
+
+const canhoteiraInput = document.querySelector('#canhoteira');
+const canhoteiraPreview = document.querySelector('#canhoteiraPreview');
+canhoteiraInput?.addEventListener('change', () => previewFiles(canhoteiraInput, canhoteiraPreview, { grid: true }));
+
+nextBtn?.addEventListener('click', handleNext);
+prevBtn?.addEventListener('click', handlePrev);
+
 document.addEventListener('DOMContentLoaded', () => {
   setToday();
   hydrateDriverName();
   toggleReturnFields();
   togglePixFields();
+  setStep(1);
 });
