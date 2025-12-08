@@ -116,7 +116,7 @@ function setStep(step) {
     progressBar.style.width = `${pct}%`;
   }
 
-  if (prevBtn) prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+  if (prevBtn) prevBtn.style.display = currentStep === 1 ? 'none' : 'inline-flex';
   if (nextBtn) nextBtn.style.display = currentStep === panes.length ? 'none' : 'inline-flex';
   if (submitBtn) submitBtn.style.display = currentStep === panes.length ? 'inline-flex' : 'none';
 }

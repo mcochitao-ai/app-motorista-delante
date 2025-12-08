@@ -7,41 +7,32 @@
   <p class="lede">Crie novos logins para motoristas e ajudantes. Apenas admins têm acesso.</p>
 </section>
 
-<div class="grid two">
-  <section class="card">
-    <h2>Usuários existentes</h2>
-    <div class="table">
-      <div class="row head">
-        <div>ID</div><div>Nome</div><div>Usuário</div><div>Papel</div>
-      </div>
-      {% for u in users %}
-      <div class="row">
-        <div>{{ u['id'] }}</div>
-        <div>{{ u['name'] }}</div>
-        <div>{{ u['username'] }}</div>
-        <div class="pill pill-alt">{{ u['role'] }}</div>
-      </div>
-      {% endfor %}
-      {% if not users %}
-      <p class="muted">Nenhum usuário cadastrado além do admin.</p>
-      {% endif %}
+<section class="card" style="margin-bottom: 24px;">
+  <h2>Novo usuário</h2>
+  <form method="post" class="form" style="max-width: 600px;">
+    <div class="field">
+      <label for="name">Nome completo</label>
+      <input id="name" name="name" placeholder="Ex: João Silva" required>
     </div>
-  </section>
-
-  <section class="card">
-    <h2>Novo usuário</h2>
-    <form method="post" class="form">
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="joao@exemplo.com" autocomplete="email" required>
+    </div>
+    <div class="field two-col">
       <div class="field">
-        <label for="name">Nome</label>
-        <input id="name" name="name" required>
+        <label for="cnh">CNH</label>
+        <input id="cnh" name="cnh" placeholder="Ex: 12345678901" required>
       </div>
       <div class="field">
-        <label for="username">Usuário</label>
-        <input id="username" name="username" autocomplete="username" required>
+        <label for="phone">Telefone</label>
+        <input id="phone" name="phone" type="tel" placeholder="Ex: (11) 98765-4321" required>
       </div>
+    </div>
+    <div class="field two-col">
       <div class="field">
         <label for="password">Senha</label>
         <input id="password" name="password" type="password" autocomplete="new-password" required>
+        <p class="hint">Mínimo 6 caracteres.</p>
       </div>
       <div class="field">
         <label for="role">Papel</label>
@@ -50,10 +41,45 @@
           <option value="admin">Admin</option>
         </select>
       </div>
-      <div class="actions">
-        <button type="submit" class="primary">Criar usuário</button>
+    </div>
+    <div class="actions">
+      <button type="submit" class="primary">Criar usuário</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Usuários cadastrados</h2>
+  {% if users %}
+  <div class="users-list">
+    {% for u in users %}
+    <div class="user-card">
+      <div class="user-card-header">
+        <div>
+          <div class="user-name">{{ u['name'] }}</div>
+          <div class="user-email">{{ u['email'] or u['username'] }}</div>
+        </div>
+        <span class="pill pill-alt">{{ u['role'] }}</span>
       </div>
-    </form>
-  </section>
-</div>
+      <div class="user-card-details">
+        <div class="user-detail-item">
+          <span class="detail-label">ID</span>
+          <span class="detail-value">{{ u['id'] }}</span>
+        </div>
+        <div class="user-detail-item">
+          <span class="detail-label">CNH</span>
+          <span class="detail-value">{{ u['cnh'] or '—' }}</span>
+        </div>
+        <div class="user-detail-item">
+          <span class="detail-label">Telefone</span>
+          <span class="detail-value">{{ u['phone'] or '—' }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Nenhum usuário cadastrado além do admin.</p>
+  {% endif %}
+</section>
 {% endblock %}

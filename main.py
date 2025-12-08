@@ -357,23 +357,39 @@ def dashboard():
     db = get_db()
     if request.method == "POST":
         name = request.form.get("name", "").strip()
-        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        cnh = request.form.get("cnh", "").strip()
+        phone = request.form.get("phone", "").strip()
         password = request.form.get("password", "")
         role = request.form.get("role", "user")
-        if not all([name, username, password]):
-            flash("Preencha nome, usuário e senha.", "error")
+        
+        if not all([name, email, cnh, phone, password]):
+            flash("Preencha todos os campos obrigatórios.", "error")
+        elif len(password) < 6:
+            flash("A senha deve ter pelo menos 6 caracteres.", "error")
         else:
+            # Generate username from email
+            username = email.split("@")[0]
+            counter = 1
+            original_username = username
+            while True:
+                cur = db.execute("SELECT id FROM users WHERE username = ?", (username,))
+                if not cur.fetchone():
+                    break
+                username = f"{original_username}{counter}"
+                counter += 1
+            
             try:
                 db.execute(
-                    "INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)",
-                    (name, username, generate_password_hash(password), role),
+                    "INSERT INTO users (name, email, username, password_hash, cnh, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (name, email, username, generate_password_hash(password), cnh, phone, role),
                 )
                 db.commit()
-                flash("Usuário criado.", "success")
+                flash("Usuário criado com sucesso.", "success")
             except sqlite3.IntegrityError:
-                flash("Usuário já existe.", "error")
+                flash("Email já cadastrado.", "error")
 
-    cur = db.execute("SELECT id, name, username, role FROM users ORDER BY id DESC")
+    cur = db.execute("SELECT id, name, email, username, cnh, phone, role FROM users ORDER BY id DESC")
     users = cur.fetchall()
     return render_template("dashboard.html", users=users)
 
