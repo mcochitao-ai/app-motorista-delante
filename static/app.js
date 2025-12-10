@@ -6,6 +6,7 @@ const pixBlock = document.querySelector('#pixBlock');
 const form = document.querySelector('#tripForm');
 const feedback = document.querySelector('#feedback');
 const driverNameInput = document.querySelector('#driverName');
+const addReturnBtn = document.querySelector('#addReturnField');
 
 // Wizard controls
 const panes = document.querySelectorAll('[data-step-pane]');
@@ -52,34 +53,29 @@ function toggleReturnFields() {
     if (container) container.innerHTML = '';
   } else {
     const container = document.querySelector('#returnedNotesContainer');
-    if (container && container.childElementCount === 0) {
-      generateReturnFields();
-    }
+    if (container && container.childElementCount === 0) addReturnField();
   }
 }
 
-function generateReturnFields() {
-  const count = parseInt(document.querySelector('#returnCount')?.value || 1);
+function addReturnField() {
   const container = document.querySelector('#returnedNotesContainer');
   if (!container) return;
 
-  container.innerHTML = '';
-  for (let i = 1; i <= count; i++) {
-    const item = document.createElement('div');
-    item.className = 'return-note-item';
-    item.innerHTML = `
-      <h4>Nota devolvida ${i}</h4>
-      <div class="field">
-        <label for="returnedNote${i}">Número da nota</label>
-        <input type="text" id="returnedNote${i}" name="returnedNote${i}" placeholder="Ex: NF-12345" required />
-      </div>
-      <div class="field">
-        <label for="returnReason${i}">Motivo da devolução</label>
-        <textarea id="returnReason${i}" name="returnReason${i}" rows="3" placeholder="Descreva o motivo" required></textarea>
-      </div>
-    `;
-    container.appendChild(item);
-  }
+  const idx = container.childElementCount + 1;
+  const item = document.createElement('div');
+  item.className = 'return-note-item';
+  item.innerHTML = `
+    <h4>Nota devolvida ${idx}</h4>
+    <div class="field">
+      <label for="returnedNote${idx}">Número da nota</label>
+      <input type="text" id="returnedNote${idx}" name="returnedNote${idx}" placeholder="Ex: NF-12345" required />
+    </div>
+    <div class="field">
+      <label for="returnReason${idx}">Motivo da devolução</label>
+      <textarea id="returnReason${idx}" name="returnReason${idx}" rows="3" placeholder="Descreva o motivo" required></textarea>
+    </div>
+  `;
+  container.appendChild(item);
 }
 
 function togglePixFields() {
@@ -191,9 +187,7 @@ pixOptions.forEach((opt) => opt.addEventListener('change', togglePixFields));
 driverNameInput?.addEventListener('blur', persistDriverName);
 
 const generateBtn = document.querySelector('#generateReturnFields');
-if (generateBtn) {
-  generateBtn.addEventListener('click', generateReturnFields);
-}
+addReturnBtn?.addEventListener('click', addReturnField);
 
 const pixProofInput = document.querySelector('#pixProof');
 const pixPreview = document.querySelector('#pixPreview');
