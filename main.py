@@ -1,9 +1,12 @@
 import os
-import sqlite3
 from functools import wraps
 from pathlib import Path
 import json
 import urllib.parse
+
+import psycopg2
+import psycopg2.extras
+from psycopg2 import pool
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, g, abort
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,7 +14,9 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 
 BASE_DIR = Path(__file__).parent
-DB_PATH = BASE_DIR / "app.db"
+
+# PostgreSQL connection pool
+db_pool = None
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me")
@@ -23,9 +28,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = 86400  # 24 horas em segundos
 
 def get_db():
     if "db" not in g:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        g.db = conn
+        g.db = db_pool.getconn()
     return g.db
 
 
@@ -33,47 +36,65 @@ def get_db():
 def close_db(_):
     db = g.pop("db", None)
     if db is not None:
-        db.close()
+        db_pool.putconn(db)
 
 
 def init_db():
-    db = sqlite3.connect(DB_PATH)
-    db.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            username TEXT UNIQUE,
-            password_hash TEXT,
-            email TEXT UNIQUE,
-            cnh TEXT,
-            phone TEXT,
-            role TEXT NOT NULL DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
-    db.close()
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    username TEXT UNIQUE,
+                    password_hash TEXT,
+                    email TEXT UNIQUE,
+                    cnh TEXT,
+                    phone TEXT,
+                    role TEXT NOT NULL DEFAULT 'user',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            conn.commit()
+    finally:
+        db_pool.putconn(conn)
 
 
 def ensure_admin():
     admin_user = os.environ.get("ADMIN_USER", "admin")
     admin_pass = os.environ.get("ADMIN_PASS", "admin123")
-    db = sqlite3.connect(DB_PATH)
-    db.row_factory = sqlite3.Row
-    cur = db.execute("SELECT id FROM users WHERE username = ?", (admin_user,))
-    row = cur.fetchone()
-    if row is None:
-        db.execute(
-            "INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, ?)",
-            ("Administrador", admin_user, generate_password_hash(admin_pass), "admin"),
-        )
-        db.commit()
-    db.close()
+    conn = db_pool.getconn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE username = %s", (admin_user,))
+            row = cur.fetchone()
+            if row is None:
+                cur.execute(
+                    "INSERT INTO users (name, username, password_hash, role) VALUES (%s, %s, %s, %s)",
+                    ("Administrador", admin_user, generate_password_hash(admin_pass), "admin"),
+                )
+                conn.commit()
+    finally:
+        db_pool.putconn(conn)
 
 
-init_db()
-ensure_admin()
+def init_app():
+    global db_pool
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise ValueError("DATABASE_URL environment variable is required")
+    
+    db_pool = psycopg2.pool.SimpleConnectionPool(
+        1, 20,
+        database_url,
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+    init_db()
+    ensure_admin()
+
+
+init_app()
 
 
 def login_required(view):
@@ -108,8 +129,9 @@ def load_user():
         return
     
     db = get_db()
-    cur = db.execute("SELECT id, name, username, role FROM users WHERE id = ?", (user_id,))
-    user = cur.fetchone()
+    with db.cursor() as cur:
+        cur.execute("SELECT id, name, username, role FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
     
     # Valida se o user_id da sessão ainda existe no banco
     if user:
@@ -154,11 +176,12 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         db = get_db()
-        cur = db.execute(
-            "SELECT id, name, username, password_hash, role FROM users WHERE username = ?",
-            (username,),
-        )
-        user = cur.fetchone()
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT id, name, username, password_hash, role FROM users WHERE username = %s",
+                (username,),
+            )
+            user = cur.fetchone()
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["id"]
             session["username"] = user["username"]
@@ -185,14 +208,16 @@ def signup():
 
         db = get_db()
         try:
-            db.execute(
-                "INSERT INTO users (email, name, password_hash, cnh, phone, role) VALUES (?, ?, ?, ?, ?, ?)",
-                (email, name, generate_password_hash(password), cnh, phone, "user"),
-            )
+            with db.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO users (email, name, password_hash, cnh, phone, role) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (email, name, generate_password_hash(password), cnh, phone, "user"),
+                )
             db.commit()
             flash("Conta criada! Faça login.", "success")
             return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
+            db.rollback()
             flash("Email já cadastrado.", "error")
     return render_template("signup.html")
 
@@ -229,8 +254,9 @@ def google_callback():
         db = get_db()
 
         # Check if user already exists
-        cur = db.execute("SELECT id, name, cnh, phone, role FROM users WHERE email = ?", (email,))
-        user = cur.fetchone()
+        with db.cursor() as cur:
+            cur.execute("SELECT id, name, cnh, phone, role FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
 
         if user:
             # User exists, log them in
@@ -255,22 +281,25 @@ def google_callback():
             counter = 1
             original_username = username
             while True:
-                cur = db.execute("SELECT id FROM users WHERE username = ?", (username,))
-                if not cur.fetchone():
-                    break
+                with db.cursor() as cur:
+                    cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+                    if not cur.fetchone():
+                        break
                 username = f"{original_username}{counter}"
                 counter += 1
 
             # Create new user (but they need to complete profile first)
-            db.execute(
-                "INSERT INTO users (email, name, username, password_hash, role) VALUES (?, ?, ?, ?, ?)",
-                (email, name, username, generate_password_hash("oauth"), "user"),
-            )
+            with db.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO users (email, name, username, password_hash, role) VALUES (%s, %s, %s, %s, %s)",
+                    (email, name, username, generate_password_hash("oauth"), "user"),
+                )
             db.commit()
 
             # Get the new user
-            cur = db.execute("SELECT id FROM users WHERE email = ?", (email,))
-            new_user = cur.fetchone()
+            with db.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE email = %s", (email,))
+                new_user = cur.fetchone()
 
             # Set session but redirect to profile creation
             session["user_id"] = new_user["id"]
@@ -294,8 +323,9 @@ def profile_create():
     user_id = session.get("user_id")
     
     # Check if user already has a complete profile
-    cur = db.execute("SELECT cnh, phone FROM users WHERE id = ?", (user_id,))
-    user = cur.fetchone()
+    with db.cursor() as cur:
+        cur.execute("SELECT cnh, phone FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
     
     if user and user["cnh"] and user["phone"]:
         # Profile already complete, redirect to home
@@ -320,10 +350,11 @@ def profile_create():
             return redirect(url_for("profile_create"))
 
         # Update user profile
-        db.execute(
-            "UPDATE users SET cnh = ?, phone = ?, password_hash = ? WHERE id = ?",
-            (cnh, phone, generate_password_hash(password), user_id),
-        )
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET cnh = %s, phone = %s, password_hash = %s WHERE id = %s",
+                (cnh, phone, generate_password_hash(password), user_id),
+            )
         db.commit()
 
         flash("Perfil criado com sucesso!", "success")
@@ -373,24 +404,28 @@ def dashboard():
             counter = 1
             original_username = username
             while True:
-                cur = db.execute("SELECT id FROM users WHERE username = ?", (username,))
-                if not cur.fetchone():
-                    break
+                with db.cursor() as cur:
+                    cur.execute("SELECT id FROM users WHERE username = %s", (username,))
+                    if not cur.fetchone():
+                        break
                 username = f"{original_username}{counter}"
                 counter += 1
             
             try:
-                db.execute(
-                    "INSERT INTO users (name, email, username, password_hash, cnh, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (name, email, username, generate_password_hash(password), cnh, phone, role),
-                )
+                with db.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO users (name, email, username, password_hash, cnh, phone, role) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        (name, email, username, generate_password_hash(password), cnh, phone, role),
+                    )
                 db.commit()
                 flash("Usuário criado com sucesso.", "success")
-            except sqlite3.IntegrityError:
+            except psycopg2.IntegrityError:
+                db.rollback()
                 flash("Email já cadastrado.", "error")
 
-    cur = db.execute("SELECT id, name, email, username, cnh, phone, role FROM users ORDER BY id DESC")
-    users = cur.fetchall()
+    with db.cursor() as cur:
+        cur.execute("SELECT id, name, email, username, cnh, phone, role FROM users ORDER BY id DESC")
+        users = cur.fetchall()
     return render_template("dashboard.html", users=users)
 
 
